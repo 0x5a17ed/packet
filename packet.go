@@ -29,16 +29,17 @@ const (
 // Config contains options for a Conn.
 type Config struct {
 	// Filter is an optional assembled BPF filter which can be applied to the
-	// Conn before bind(2) is called.
+	// Conn before packet capture begins.
 	//
 	// The Conn.SetBPF method serves the same purpose once a Conn has already
 	// been opened, but setting Filter applies the BPF filter before the Conn is
-	// bound. This ensures that unexpected packets will not be captured before
-	// the Conn is opened.
+	// bound or attached to an interface. This ensures that unexpected packets
+	// will not be captured before the Conn is opened.
 	Filter []bpf.RawInstruction
 }
 
 // Type is a socket type used when creating a Conn with Listen.
+//
 //enumcheck:exhaustive
 type Type int
 
@@ -50,10 +51,11 @@ const (
 	Datagram
 )
 
-// Listen opens a packet sockets connection on the specified interface, using
-// the given socket type and protocol values.
+// Listen opens a packet connection on the specified interface, using the given
+// socket type and protocol values.
 //
 // The socket type must be one of the Type constants: Raw or Datagram.
+// FreeBSD currently supports Raw only.
 //
 // The Config specifies optional configuration for the Conn. A nil *Config
 // applies the default configuration.
@@ -76,8 +78,7 @@ var (
 	_ bpf.Setter     = &Conn{}
 )
 
-// A Conn is an Linux packet sockets (AF_PACKET) implementation of a
-// net.PacketConn.
+// A Conn is a physical-layer implementation of a net.PacketConn.
 type Conn struct {
 	c *conn
 
@@ -128,11 +129,14 @@ func (c *Conn) SetBPF(filter []bpf.RawInstruction) error {
 
 // SetPromiscuous enables or disables promiscuous mode on the Conn, allowing it
 // to receive traffic that is not addressed to the Conn's network interface.
+// On FreeBSD, promiscuous mode can be enabled and is released when the Conn is
+// closed, but disabling it before Close is not supported.
 func (c *Conn) SetPromiscuous(enable bool) error {
 	return c.setPromiscuous(enable)
 }
 
-// Stats contains statistics about a Conn reported by the Linux kernel.
+// Stats contains statistics about a Conn reported by the operating system
+// kernel.
 type Stats struct {
 	// The total number of packets received.
 	Packets uint32
@@ -145,11 +149,11 @@ type Stats struct {
 	FreezeQueueCount uint32
 }
 
-// Stats retrieves statistics about the Conn from the Linux kernel.
+// Stats retrieves statistics about the Conn from the operating system kernel.
 //
-// Note that calling Stats will reset the kernel's internal counters for this
-// Conn. If you want to maintain cumulative statistics by polling Stats over
-// time, you must do so in your calling code.
+// Calling Stats will reset the counters reported by this Conn. If you want to
+// maintain cumulative statistics by polling Stats over time, you must do so in
+// your calling code.
 func (c *Conn) Stats() (*Stats, error) { return c.stats() }
 
 // SyscallConn returns a raw network connection. This implements the

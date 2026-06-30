@@ -14,6 +14,7 @@ Flags:
   --mem MB            guest memory in MB (default: 2048)
   --cpu N             guest vCPU count
   --go-version X.Y.Z  Go version to install in the guest (default: 1.26.2)
+  --coverage-dir DIR  write Go coverage data to DIR
   -h, --help          show this help
 
 Environment overrides:
@@ -38,19 +39,20 @@ arch=""
 mem="2048"
 cpu=""
 go_version="1.26.2"
+coverage_dir=""
 
 while [ "$#" -gt 0 ]; do
 	key=
 	val=
 
 	case "$1" in
-	--os | --release | --arch | --mem | --cpu | --go-version)
+	--os | --release | --arch | --mem | --cpu | --go-version | --coverage-dir)
 		require_value "$@"
 		key="${1#--}"
 		val="$2"
 		shift 2
 		;;
-	--os=* | --release=* | --arch=* | --mem=* | --cpu=* | --go-version=*)
+	--os=* | --release=* | --arch=* | --mem=* | --cpu=* | --go-version=* | --coverage-dir=*)
 		key="${1%%=*}"
 		key="${key#--}"
 		val="${1#*=}"
@@ -74,6 +76,7 @@ while [ "$#" -gt 0 ]; do
 	mem) mem="$val" ;;
 	cpu) cpu="$val" ;;
 	go-version) go_version="$val" ;;
+	coverage-dir) coverage_dir="$val" ;;
 	esac
 done
 
@@ -104,5 +107,23 @@ anyvm_args=(--os "$os" --mem "$mem" --vnc off --snapshot)
 [[ -n "$cpu" ]] && anyvm_args+=(--cpu "$cpu")
 
 guest_cmd=(sh /workspace/scripts/test-vm-guest.sh --go-version "$go_version")
+if [[ -n "$coverage_dir" ]]; then
+	if [[ "$coverage_dir" != /* ]]; then
+		coverage_dir="$repo_dir/$coverage_dir"
+	fi
+	mkdir -p "$coverage_dir"
+	coverage_dir="$(cd "$coverage_dir" && pwd)"
+
+	case "$coverage_dir/" in
+	"$repo_dir"/*) ;;
+	*)
+		echo "coverage dir must be inside repository: $coverage_dir" >&2
+		exit 2
+		;;
+	esac
+
+	guest_coverage_dir="/workspace${coverage_dir#"$repo_dir"}"
+	guest_cmd+=(--coverage-dir "$guest_coverage_dir")
+fi
 
 "$docker" run "${docker_args[@]}" "$image" "${anyvm_args[@]}" -- "${guest_cmd[@]}"

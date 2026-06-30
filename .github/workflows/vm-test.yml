@@ -10,8 +10,11 @@ on:
     branches:
       - "*"
 
+env:
+  COVERAGE_GO_VERSION: "1.26.2"
+
 jobs:
-  build:
+  vm-coverage:
     name: ${{ matrix.target.os }} ${{ matrix.target.release }} / Go ${{ matrix.go-version }}
     runs-on: ubuntu-latest
 
@@ -47,3 +50,51 @@ jobs:
           --os "${{ matrix.target.os }}"
           --release "${{ matrix.target.release }}"
           --go-version "${{ matrix.go-version }}"
+          --coverage-dir ".cache/coverage/raw/vm-${{ matrix.target.os }}-${{ matrix.target.release }}-go-${{ matrix.go-version }}"
+
+      - name: Upload raw coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-coverage-vm-${{ matrix.target.os }}-${{ matrix.target.release }}-go-${{ matrix.go-version }}
+          path: .cache/coverage/raw/vm-${{ matrix.target.os }}-${{ matrix.target.release }}-go-${{ matrix.go-version }}
+          if-no-files-found: error
+
+  coverage-report:
+    name: Coverage report
+    runs-on: ubuntu-latest
+    needs:
+      - vm-coverage
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.COVERAGE_GO_VERSION }}
+
+      - name: Set up just
+        uses: extractions/setup-just@v4
+        with:
+          just-version: "1.55.1"
+
+      - name: Download raw coverage
+        uses: actions/download-artifact@v4
+        with:
+          pattern: raw-coverage-vm-*-go-${{ env.COVERAGE_GO_VERSION }}
+          path: .cache/coverage/downloaded
+          merge-multiple: true
+
+      - name: Generate coverage report
+        run: just coverage-report --covdata-input .cache/coverage/downloaded
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            .cache/coverage/report/coverage.out
+            .cache/coverage/report/coverage.txt
+            .cache/coverage/report/coverage.html
+          if-no-files-found: error

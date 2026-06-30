@@ -24,6 +24,7 @@ This project includes a [`justfile`](./justfile) for common local test flows:
 just test
 just test-vm
 just test-vm-linux
+just test-vm-coverage
 just test-unsupported
 ```
 
@@ -34,11 +35,12 @@ VM tests install Go 1.26.2 by default.
 
 You can pass anyvm target details as `just` options and use environment
 variables for runner overrides.
-The `test-vm` recipe uses named options, which require `just` 1.46 or newer:
+The `justfile` requires `just` 1.55.1 or newer:
 
 ```sh
 just test-vm --os freebsd --release 14.4
 just test-vm --os ubuntu --release 24.04 --go-version 1.26.2
+just test-vm-coverage --ubuntu-release 24.04 --freebsd-release 14.4
 just test-vm --os freebsd --release 14.4 --arch aarch64 --mem 4096
 DOCKER=podman just test-vm --os freebsd
 ```

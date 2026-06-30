@@ -6,25 +6,41 @@ if [ -d /usr/local/go/bin ]; then
 fi
 
 go_version=""
+coverage_dir=""
+
+require_value() {
+	if [ "$#" -lt 2 ] || [ "${2#--}" != "$2" ]; then
+		echo "missing value for $1" >&2
+		exit 2
+	fi
+}
 
 while [ "$#" -gt 0 ]; do
+	key=
+	val=
+
 	case "$1" in
-	--go-version)
-		if [ "$#" -lt 2 ] || [ "${2#--}" != "$2" ]; then
-			echo "missing value for --go-version" >&2
-			exit 2
-		fi
-		go_version="$2"
+	--go-version | --coverage-dir)
+		require_value "$@"
+		key="${1#--}"
+		val="$2"
 		shift 2
 		;;
-	--go-version=*)
-		go_version="${1#*=}"
+	--go-version=* | --coverage-dir=*)
+		key="${1%%=*}"
+		key="${key#--}"
+		val="${1#*=}"
 		shift
 		;;
 	*)
 		echo "unknown argument: $1" >&2
 		exit 2
 		;;
+	esac
+
+	case "$key" in
+	go-version) go_version="$val" ;;
+	coverage-dir) coverage_dir="$val" ;;
 	esac
 done
 if [ -z "$go_version" ]; then
@@ -157,5 +173,13 @@ run_step "Verify module dependencies" \
 run_step "Verify module graph" \
 	go list -m -mod=readonly all
 
-run_step "Run tests" \
-	go test -count 1 -v ./...
+if [ -n "$coverage_dir" ]; then
+	mkdir -p "$coverage_dir"
+	# With -cover, go test gives test binaries an internal coverage directory.
+	# Override it so CI can upload the covdata files from the mounted workspace.
+	run_step "Run tests with coverage" \
+		go test -count 1 -v -covermode=count -cover ./... -args "-test.gocoverdir=$coverage_dir"
+else
+	run_step "Run tests" \
+		go test -count 1 -v ./...
+fi

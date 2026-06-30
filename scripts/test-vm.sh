@@ -13,6 +13,7 @@ Flags:
   --arch ARCH         guest architecture
   --mem MB            guest memory in MB (default: 2048)
   --cpu N             guest vCPU count
+  --go-version X.Y.Z  Go version to install in the guest (default: 1.26.2)
   -h, --help          show this help
 
 Environment overrides:
@@ -36,19 +37,20 @@ release=""
 arch=""
 mem="2048"
 cpu=""
+go_version="1.26.2"
 
 while [ "$#" -gt 0 ]; do
 	key=
 	val=
 
 	case "$1" in
-	--os | --release | --arch | --mem | --cpu)
+	--os | --release | --arch | --mem | --cpu | --go-version)
 		require_value "$@"
 		key="${1#--}"
 		val="$2"
 		shift 2
 		;;
-	--os=* | --release=* | --arch=* | --mem=* | --cpu=*)
+	--os=* | --release=* | --arch=* | --mem=* | --cpu=* | --go-version=*)
 		key="${1%%=*}"
 		key="${key#--}"
 		val="${1#*=}"
@@ -71,6 +73,7 @@ while [ "$#" -gt 0 ]; do
 	arch) arch="$val" ;;
 	mem) mem="$val" ;;
 	cpu) cpu="$val" ;;
+	go-version) go_version="$val" ;;
 	esac
 done
 
@@ -78,6 +81,11 @@ release="${ANYVM_RELEASE:-$release}"
 arch="${ANYVM_ARCH:-$arch}"
 mem="${ANYVM_MEM:-$mem}"
 cpu="${ANYVM_CPU:-$cpu}"
+
+if [[ -z "$go_version" ]]; then
+	echo "go version must not be empty" >&2
+	exit 2
+fi
 
 if [[ "$data_dir" != /* ]]; then
 	data_dir="$repo_dir/$data_dir"
@@ -95,4 +103,6 @@ anyvm_args=(--os "$os" --mem "$mem" --vnc off --snapshot)
 [[ -n "$arch" ]] && anyvm_args+=(--arch "$arch")
 [[ -n "$cpu" ]] && anyvm_args+=(--cpu "$cpu")
 
-"$docker" run "${docker_args[@]}" "$image" "${anyvm_args[@]}" -- sh /workspace/scripts/test-vm-guest.sh
+guest_cmd=(sh /workspace/scripts/test-vm-guest.sh --go-version "$go_version")
+
+"$docker" run "${docker_args[@]}" "$image" "${anyvm_args[@]}" -- "${guest_cmd[@]}"

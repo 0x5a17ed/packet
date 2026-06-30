@@ -30,20 +30,24 @@ just test-unsupported
 `just test-vm` uses [anyvm Docker](https://github.com/anyvm-org/docker) to run
 the test suite in virtual machines by default. It makes the repository available at
 `/workspace` inside the guest and stores downloaded VM data in `.cache/anyvm-data/`.
+VM tests install Go 1.26.2 by default.
 
-You can pass anyvm target details as just arguments or environment variables:
+You can pass anyvm target details as `just` options and use environment
+variables for runner overrides.
+The `test-vm` recipe uses named options, which require `just` 1.46 or newer:
 
 ```sh
-just test-vm freebsd 14.4
-ANYVM_ARCH=aarch64 ANYVM_MEM=4096 just test-vm freebsd
-DOCKER=podman just test-vm freebsd
-just test-vm ubuntu 24.04
+just test-vm --os freebsd --release 14.4
+just test-vm --os ubuntu --release 24.04 --go-version 1.26.2
+just test-vm --os freebsd --release 14.4 --arch aarch64 --mem 4096
+DOCKER=podman just test-vm --os freebsd
 ```
 
 The VM runner is also available directly with named flags:
 
 ```sh
 scripts/test-vm.sh --os freebsd --release 14.4
+scripts/test-vm.sh --os ubuntu --release 26.04 --go-version 1.26.2
 ```
 
 ## History

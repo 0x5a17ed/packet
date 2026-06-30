@@ -1,0 +1,49 @@
+# -*- mode: yaml; tab-width: 2; indent-tabs-mode: nil; -*-
+---
+name: VM Test
+
+on:
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+
+jobs:
+  build:
+    name: ${{ matrix.target.os }} ${{ matrix.target.release }} / Go ${{ matrix.go-version }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: ["1.25.0", "1.26.2"]
+        target:
+          - os: freebsd
+            release: "14.4"
+          - os: freebsd
+            release: "15.0"
+          - os: ubuntu
+            release: "24.04"
+          - os: ubuntu
+            release: "26.04"
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Cache anyvm data
+        uses: actions/cache@v4
+        with:
+          path: .cache/anyvm-data
+          key: anyvm-${{ matrix.target.os }}-${{ matrix.target.release }}-${{ runner.os }}-${{ runner.arch }}-v2
+          restore-keys: |
+            anyvm-${{ matrix.target.os }}-${{ matrix.target.release }}-${{ runner.os }}-${{ runner.arch }}-v2
+
+      - name: Run VM tests
+        run: >
+          scripts/test-vm.sh
+          --os "${{ matrix.target.os }}"
+          --release "${{ matrix.target.release }}"
+          --go-version "${{ matrix.go-version }}"

@@ -16,6 +16,36 @@ This package only supports the two most recent major versions of Go, mirroring
 Go's own release policy. Older versions of Go may lack critical features and bug
 fixes which are necessary for this package to function correctly.
 
+## Development
+
+This project includes a [`justfile`](./justfile) for common local test flows:
+
+```sh
+just test
+just test-linux-cap
+just test-unsupported
+just test-vm
+```
+
+`just test-vm` uses [anyvm Docker](https://github.com/anyvm-org/docker) to run
+the test suite in virtual machines by default. It makes the repository available at
+`/workspace` inside the guest and stores downloaded VM data in `.cache/anyvm-data/`.
+
+You can pass anyvm target details as just arguments or environment variables:
+
+```sh
+just test-vm freebsd 14.4
+ANYVM_ARCH=aarch64 ANYVM_MEM=4096 just test-vm freebsd
+DOCKER=podman just test-vm freebsd
+just test-vm ubuntu 24.04
+```
+
+The VM runner is also available directly with named flags:
+
+```sh
+scripts/test-vm.sh --os freebsd --release 14.4
+```
+
 ## History
 
 One of my first major Go networking projects was

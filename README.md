@@ -57,15 +57,19 @@ scripts/test-vm.sh --os ubuntu --release 26.04 --go-version 1.26.2
 One of my first major Go networking projects was
 [`github.com/mdlayher/raw`](https://github.com/mdlayher/raw), which provided
 access to Linux `AF_PACKET` sockets and *BSD equivalent mechanisms for sending
-and receiving Ethernet frames. However, the *BSD support languished and I lack
-the expertise and time to properly maintain code for operating systems I do not
-use on a daily basis.
+and receiving Ethernet frames. However, the *BSD support languished. When
+package `packet` was created as a successor to package `raw`, that support was
+not ported because I lacked the expertise to properly maintain a FreeBSD backend
+and did not have a practical way to test it.
 
-Package `packet` is a successor to package `raw`, focused on Linux
-`AF_PACKET` sockets and FreeBSD Berkeley Packet Filter devices. The APIs are
-nearly identical, but with a few changes which take into account some of the
-lessons learned while working on `raw`.
+Package `packet` is a successor to package `raw`, and was originally focused on
+Linux `AF_PACKET` sockets. The APIs are nearly identical, but with a few changes
+which take into account some of the lessons learned while working on `raw`.
 
-Users are highly encouraged to migrate any existing Linux uses of `raw` to
-package `packet` instead. This package will be supported for the foreseeable
-future and will receive continued updates as necessary.
+FreeBSD support has since been added back to package `packet` through Berkeley
+Packet Filter devices. The testing situation has changed as well: the FreeBSD
+backend is covered by automated tests running in a virtual machine.
+
+Users are highly encouraged to migrate any existing uses of `raw` to package
+`packet` instead. This package will be supported for the foreseeable future and
+will receive continued updates as necessary.

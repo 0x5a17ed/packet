@@ -22,9 +22,9 @@ This project includes a [`justfile`](./justfile) for common local test flows:
 
 ```sh
 just test
-just test-linux-cap
-just test-unsupported
 just test-vm
+just test-vm-linux
+just test-unsupported
 ```
 
 `just test-vm` uses [anyvm Docker](https://github.com/anyvm-org/docker) to run

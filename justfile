@@ -8,18 +8,9 @@ default:
 test:
     GOCACHE="${GOCACHE:-{{ go_cache }}}" go test ./...
 
-# Run the Linux capability-backed test binary, mirroring CI.
-test-linux-cap:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    tmp="$(mktemp -d)"
-    trap 'rm -rf "$tmp"' EXIT
-
-    export GOCACHE="${GOCACHE:-{{ go_cache }}}"
-    go test -c -race -o "$tmp/packet.test"
-    sudo setcap cap_net_raw+ep "$tmp/packet.test"
-    "$tmp/packet.test" -test.v
+# Run Linux package tests in an anyvm Docker guest.
+test-vm-linux:
+    @just test-vm ubuntu
 
 # Verify the unsupported-platform build path, mirroring CI.
 test-unsupported:

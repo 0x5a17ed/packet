@@ -9,10 +9,10 @@ FreeBSD)
 	fi
 	;;
 Linux)
-	if ! command -v go >/dev/null 2>&1; then
+	if ! command -v go >/dev/null 2>&1 || ! command -v ip >/dev/null 2>&1; then
 		export DEBIAN_FRONTEND=noninteractive
 		apt-get update
-		apt-get install -y --no-install-recommends ca-certificates golang-go
+		apt-get install -y --no-install-recommends ca-certificates golang-go iproute2
 	fi
 	;;
 *)
